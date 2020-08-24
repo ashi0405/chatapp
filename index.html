@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Let's Chat</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Alata&family=Barrio&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z"
+      crossorigin="anonymous"
+    />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      #message {
+        width: 70%;
+        border: none;
+        margin-top: 25px;
+      }
+
+      #username {
+        width: 50%;
+        margin: auto;
+      }
+
+      #usernameerror {
+        width: 50%;
+        margin: auto;
+        color: white;
+      }
+
+      #create {
+        width: 50%;
+
+        margin: auto;
+      }
+
+      .chatbox {
+        /* border: 1px solid red; */
+        width: 50%;
+        margin: auto;
+        margin-top: 50px;
+      }
+
+      #chatWindow {
+        border: 1px solid black;
+        height: 400px;
+        width: 50%;
+        margin: auto;
+        margin-top: 50px;
+      }
+
+      .chatform {
+        margin: auto;
+        width: 50%;
+      }
+
+      #chatbox {
+        display: none;
+      }
+
+      #chats,
+      #typer {
+        width: 50%;
+        margin: auto;
+        word-wrap: break-word;
+      }
+
+      #chats p {
+        font-size: 20px;
+        font-family: Cambria;
+        text-transform: capitalize;
+      }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+  </head>
+
+  <body>
+    <div class="container mt-4">
+      <div class="jumbotron bg-dark" id="userbox">
+        <h1
+          style="
+            margin-bottom: 50px;
+            text-align: center;
+            color: white;
+            font-family: 'Alata', sans-serif;
+          "
+        >
+          Welcome to Let's Chat
+        </h1>
+        <div id="usernameerror"></div>
+        <form class="form">
+          <input
+            type="text"
+            class="form-control mt-4 mb-2"
+            placeholder="Enter username"
+            id="username"
+          />
+
+          <button
+            id="create"
+            type="submit"
+            class="btn btn-primary btn-block mb-2 mt-4"
+          >
+            Create
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="container mt-4" id="chatbox">
+      <div class="jumbotron">
+        <h1
+          style="
+            margin-bottom: 50px;
+            text-align: center;
+            font-family: 'Alata', sans-serif;
+          "
+        >
+          Let's Chat ;)
+        </h1>
+        <div id="chats"></div>
+        <div id="typer"></div>
+        <form class="form-inline chatform">
+          <input
+            type="text"
+            class="form-control mb-2"
+            maxlength="100"
+            placeholder="Enter message"
+            id="message"
+          />
+
+          <button
+            id="send"
+            type="submit"
+            class="btn btn-success mb-2 mt-4 ml-2"
+          >
+            Send
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      //Socket connection
+      var socket = io.connect("http://localhost:3000");
+
+      //username page
+      var username = document.getElementById("username");
+      var btn = document.getElementById("create");
+      var userbox = document.getElementById("userbox");
+      var usernameerror = document.getElementById("usernameerror");
+
+      // chat page
+      var message = document.getElementById("message");
+      var send = document.getElementById("send");
+      var chatbox = document.getElementById("chatbox");
+      var chats = document.getElementById("chats");
+      var typer = document.getElementById("typer");
+
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        if (username.value.length < 1) {
+          usernameerror.innerHTML = "Username is required";
+        } else {
+          socket.emit("user", username.value, function (data) {
+            if (data) {
+              userbox.style.display = "none";
+              chatbox.style.display = "block";
+            } else {
+              usernameerror.innerHTML = "Username is taken";
+              username.value=''
+            }
+          });
+        }
+      });
+
+      //Listen for events
+      socket.on("user", function (data) {
+        var html = "";
+        for (i = 0; i < data.length; i++) {
+          html += data[i] + "<br>";
+        }
+      });
+
+      send.addEventListener("click", function (e) {
+        e.preventDefault();
+        if (message.value.length < 1) {
+          return;
+        } else {
+          socket.emit("message", {
+            message: message.value,
+          });
+        }
+
+        message.value = "";
+      });
+
+      socket.on("message", function (data) {
+        typer.innerHTML = "";
+        chats.innerHTML +=
+          "<p><strong>" + data.username + ": </strong>" + data.message + "</p>";
+      });
+
+      message.addEventListener("keypress", function () {
+        socket.emit("typing", username.value);
+      });
+
+      function nottyping() {
+        socket.emit("not typing");
+      }
+
+      message.addEventListener("keyup", function () {
+        setTimeout(nottyping, 1000);
+      });
+
+      socket.on("typing", function (data) {
+        typer.innerHTML =
+          "<p><em>" + data + " is typing a message..." + "</em></p>";
+      });
+
+      socket.on("not typing", function () {
+        typer.innerHTML = "";
+      });
+    </script>
+
+    <!-- Bootstrap Js -->
+    <script
+      src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+      integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"
+      integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+      integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV"
+      crossorigin="anonymous"
+    ></script>
+  </body>
+</html>
