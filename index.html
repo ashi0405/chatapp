@@ -212,7 +212,7 @@
           "<p><strong>" + data.username + ": </strong>" + data.message + "</p>";
       });
 
-      message.addEventListener("keypress", function () {
+      message.addEventListener("keydown", function () {
         socket.emit("typing", username.value);
       });
 
