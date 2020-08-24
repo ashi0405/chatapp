@@ -48,7 +48,7 @@ io.on("connection", function (socket) {
   })
 
   //Disconnect
-  socket.on('disconnect', function (data) {
+  socket.on('disconnect', function () {
     if (!socket.username) {
       return;
     }
